@@ -1,12 +1,5 @@
 # Reimplement-depth-map-prediction
-# Data Import Returns data_depth,data_images,data_rawDepths,data_labels,data_names,data_namesToIds
 
-accelData – Nx4 matrix of accelerometer values indicated when each frame was taken. The columns contain the roll, yaw, pitch and tilt angle of the device.
-depths – HxWxN matrix of depth maps where H and W are the height and width, respectively and N is the number of images. The values of the depth elements are in meters.
-images – HxWx3xN matrix of RGB images where H and W are the height and width, respectively, and N is the number of images.
-labels – HxWxN matrix of label masks where H and W are the height and width, respectively and N is the number of images. The labels range from 1..C where C is the total number of classes. If a pixel’s label value is 0, then that pixel is ‘unlabeled’.
-names – Cx1 cell array of the english names of each class.
-namesToIds – map from english label names to IDs (with C key-value pairs)
-rawDepths – HxWxN matrix of depth maps where H and W are the height and width, respectively, and N is the number of images. These depth maps are the raw output from the kinect.
-scenes – Cx1 cell array of the name of the scene from which each image was taken.
+Stereo vision-based depth estimation is a common method used for robots and self-driving cars to navigate, grasp surrounding objects and avoid collisions. They require a system of two cameras separated from each other. On the other hand, monocular images (single-eyed) images are more often used in practice: social media posts, real estate listing, and online marketplaces. Monocular depth estimation provides better understanding of those images and their geometric relations with the environment. While local appearance information is sufficient in estimating the depth map for a stereo image, finding its depth using only a single image is more complicated. It requires both global information and local disparity from various cues. Depth cues for single images can include line angles, perspective, object sizes, image position, and atmosphere effects [1]. For this project, our goal is to build neural networks to capture the global structure of a scene and relate these depth clues effectively. We will attempt to accurately predict depth maps and reduce the error comparing the group truth depth map.
+
 
