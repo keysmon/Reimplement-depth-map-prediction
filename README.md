@@ -2,7 +2,7 @@
 # Data Import Returns data_depth,data_images,data_rawDepths,data_labels,data_names,data_namesToIds
 
 accelData – Nx4 matrix of accelerometer values indicated when each frame was taken. The columns contain the roll, yaw, pitch and tilt angle of the device.
-# depths – HxWxN matrix of depth maps where H and W are the height and width, respectively and N is the number of images. The values of the depth elements are in meters.
+depths – HxWxN matrix of depth maps where H and W are the height and width, respectively and N is the number of images. The values of the depth elements are in meters.
 images – HxWx3xN matrix of RGB images where H and W are the height and width, respectively, and N is the number of images.
 labels – HxWxN matrix of label masks where H and W are the height and width, respectively and N is the number of images. The labels range from 1..C where C is the total number of classes. If a pixel’s label value is 0, then that pixel is ‘unlabeled’.
 names – Cx1 cell array of the english names of each class.
