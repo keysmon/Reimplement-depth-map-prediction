@@ -1,6 +1,9 @@
 import h5py
 import numpy as np
 import os
+import cv2
+import matplotlib.pyplot as plt
+
 # accelData – Nx4 matrix of accelerometer values indicated when each frame was taken. The columns contain the roll, yaw, pitch and tilt angle of the device.
 # depths – HxWxN matrix of depth maps where H and W are the height and width, respectively and N is the number of images. The values of the depth elements are in meters.
 # images – HxWx3xN matrix of RGB images where H and W are the height and width, respectively, and N is the number of images.
@@ -21,25 +24,37 @@ def import_data():
         data_names = f['names']
         data_namesToIds = f['namesToIds']
         
+        # change data type from h5py to numpy
         data_depth = data_depth[:]
         data_images = data_images[:]
         data_rawDepths = data_rawDepths[:]
+        updated_data_images = []
+        # change image shape from 3-h-w to h-w-3
+        for image in data_images:
+            r = image[0]
+            g = image[1]
+            b = image[2]
+            updated_image= cv2.merge([r,g,b])
+            updated_image = cv2.cvtColor(updated_image,cv2.COLOR_BGR2GRAY)
+            updated_data_images.append(updated_image)
+
         with open('input_data.npy','wb') as f:
-            np.savez(f,x = data_depth,y = data_images,z = data_rawDepths)
+            np.savez(f,x = data_depth,y = updated_data_images,z = data_rawDepths)
         
     
     npzfile = np.load('input_data.npy')
     data_depth = npzfile['x']
     data_images = npzfile['y']
     data_rawDepths = npzfile['z']
-
+    
     
     return data_depth,data_images,data_rawDepths
     
 if __name__ == "__main__":
     data_depth,data_images,data_rawDepths = import_data()
-
-        
+    plt.imshow(data_images[0])
+    plt.show()
+    
     print(type(data_depth))
     print(type(data_images))
     print(type(data_rawDepths))
