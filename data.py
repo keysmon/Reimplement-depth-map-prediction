@@ -25,40 +25,58 @@ def import_data():
         data_namesToIds = f['namesToIds']
         
         # change data type from h5py to numpy
-        data_depth = data_depth[:]
-        data_images = data_images[:]
-        data_rawDepths = data_rawDepths[:]
+        #data_depth = data_depth[:]
+        #data_images = data_images[:]
+        
+        # pre-process raw image data
         updated_data_images = []
         # change image shape from 3-h-w to h-w-3
         for image in data_images:
             r = image[0]
             g = image[1]
             b = image[2]
+            dim = (int(r.shape[0]/2),int(r.shape[1]/2))
+            r = cv2.pyrDown(r,dim)
+            g = cv2.pyrDown(g,dim)
+            b = cv2.pyrDown(b,dim)
             updated_image= cv2.merge([r,g,b])
-            updated_image = cv2.cvtColor(updated_image,cv2.COLOR_BGR2GRAY)
             updated_data_images.append(updated_image)
+        updated_data_images = np.array(updated_data_images)
+        
+        
+        # pre-process data_depth
+        updated_data_depth = []
+        for depth in data_depth:
+            dim = (int(depth.shape[0]/8),int(depth.shape[1]/8))
+            updated_depth = cv2.pyrDown(depth,dim)
+            updated_depth = cv2.pyrDown(updated_depth,dim)
+            updated_depth = cv2.pyrDown(updated_depth,dim)
 
+            updated_data_depth.append(updated_depth)
+        #print(dim)
+        #print(data_depth.shape)
+        updated_data_depth = np.array(updated_data_depth)
+        #print(updated_data_depth.shape)
+            
+        # save the data to a local file
         with open('input_data.npy','wb') as f:
-            np.savez(f,x = data_depth,y = updated_data_images,z = data_rawDepths)
+            np.savez(f,x = updated_data_depth,y = updated_data_images)
         
     
     npzfile = np.load('input_data.npy')
     data_depth = npzfile['x']
     data_images = npzfile['y']
-    data_rawDepths = npzfile['z']
     
     
-    return data_depth,data_images,data_rawDepths
+    return data_depth,data_images
     
 if __name__ == "__main__":
-    data_depth,data_images,data_rawDepths = import_data()
-    plt.imshow(data_images[0])
-    plt.show()
+    data_depth,data_images, = import_data()
+    #plt.imshow(data_images[0])
+    #plt.show()
     
     print(type(data_depth))
     print(type(data_images))
-    print(type(data_rawDepths))
     print(data_images.shape)
     print(data_depth.shape)
-    print(data_rawDepths.shape)
     
