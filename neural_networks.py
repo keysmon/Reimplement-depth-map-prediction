@@ -34,13 +34,13 @@ def coarse_nn(X,Y):
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(4096,activation='relu'))
     model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Dense(4800,activation='linear')) # output at 1/4 resolution of input
+    model.add(keras.layers.Dense(4800,activation='relu')) # output at 1/4 resolution of input
     model.add(keras.layers.Reshape((80,60)))
     
-    model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate=0.01),loss = Scale_invariant_loss,metrics = ['accuracy'],run_eagerly = False)
-    model.fit(x = X,y = Y, epochs = 50,batch_size = 32)
+    model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate=0.0001,momentum = 0.9),loss = Scale_invariant_loss,metrics = ['accuracy'],run_eagerly = False)
+    model.fit(x = X,y = Y, epochs = 20,batch_size = 32, validation_split=0.2)
     #coarse_output = model.predict(X)
-    #model.save("my_log_model")
+    model.save("my_coarse_model")
     
     return model
 
@@ -80,7 +80,7 @@ def fine_net(X,Y,coarse_model):
     #layer_1_9.set_weights(coarse_model[8].get_weights())
     
     layer_1_10 = keras.layers.Dropout(0.5)(layer_1_9)
-    layer_1_11 = keras.layers.Dense(4800,activation='linear')(layer_1_10)
+    layer_1_11 = keras.layers.Dense(4800,activation='relu')(layer_1_10)
     #layer_1_11.trainable = False
     #layer_1_11.set_weights(coarse_model[10].get_weights())
     
@@ -91,10 +91,11 @@ def fine_net(X,Y,coarse_model):
     layer_2_3 = keras.layers.Concatenate()([layer_1_12,layer_2_2])
     
     layer_2_4 = keras.layers.Conv2D(64,(5,5),activation= 'relu',padding='same')(layer_2_3)
-    layer_2_5 = keras.layers.Conv2D(1,(5,5),activation= 'linear',padding='same')(layer_2_4)
-    
-    model = keras.Model(inputs = [input_1],outputs = [layer_2_5])
-    model.compile(optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=0.01),loss = Scale_invariant_loss,metrics = ['accuracy'])
+    layer_2_5 = keras.layers.Conv2D(64,(5,5),activation= 'relu',padding='same')(layer_2_4)
+    layer_2_6 = keras.layers.Conv2D(1,(5,5),activation= 'linear',padding='same')(layer_2_5)
+
+    model = keras.Model(inputs = [input_1],outputs = [layer_2_6])
+    model.compile(optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=0.0001,momentum = 0.9),loss = Scale_invariant_loss,metrics = ['accuracy'])
 
     #print(model.summary(show_trainable = True,expand_nested = True))
     #print(model.get_layer(index = 0))
@@ -112,18 +113,13 @@ def fine_net(X,Y,coarse_model):
     model.layers[7].set_weights(coarse_model.layers[6].get_weights())
     model.layers[9].set_weights(coarse_model.layers[8].get_weights())
     model.layers[11].set_weights(coarse_model.layers[10].get_weights())
-
     
-    
-    #print(model.layers[0])
-    #print(coarse_model.layers[1])
-
     #model.layers[0].set_weights(coarse_model.layers[1].get_weights())
     print(model.summary(show_trainable = True,expand_nested = True))
     #print(coarse_model.summary(show_trainable = True,expand_nested = True))
 
-    model.fit(x = X,y = Y, epochs = 50  ,batch_size = 32,validation_split=0.2)
-    model.save("my_model")
+    model.fit(x = X,y = Y, epochs = 20 ,batch_size = 32,validation_split=0.2)
+    model.save("my_fine_model")
     
     
     return
@@ -172,7 +168,7 @@ def Scale_invariant_loss(y_true, y_pred):
 
 
 def load_coarse(input):
-    model = keras.models.load_model("my_model", compile = False)
+    model = keras.models.load_model("my_coarse_model", compile = False)
     return model
 
 
