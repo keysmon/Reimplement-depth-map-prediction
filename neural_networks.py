@@ -1,6 +1,5 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-from PIL import Image
 
 
 import tensorflow.keras as keras
@@ -16,7 +15,6 @@ import numpy as np
 # (2284, 640, 480)
 lambda_ = 0
 cutoff = 2284
-MAX_DEPTH = 10.0
 
 def coarse_nn(X,Y):
     print(X.shape)
@@ -38,8 +36,8 @@ def coarse_nn(X,Y):
     model.add(keras.layers.Dense(4800,activation='relu')) # output at 1/4 resolution of input
     model.add(keras.layers.Reshape((80,60)))
     
-    model.compile(optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=0.001),loss = Scale_invariant_loss,metrics = ['accuracy'],run_eagerly= False)
-    model.fit(x = X,y = Y, epochs = 50,batch_size = 32)
+    model.compile(optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=0.01),loss = Scale_invariant_loss,metrics = ['accuracy'])
+    model.fit(x = X,y = Y, epochs = 5,batch_size = 32)
     #coarse_output = model.predict(X)
     #model.save("my_log_model")
     
@@ -141,9 +139,9 @@ def Scale_invariant_loss(y_true, y_pred):
     y_pred = tf.clip_by_value(y_pred,0,y_pred.dtype.max)
     #tf.print("y_pred_max",keras.backend.max(y_pred))
     #tf.print("y_pred_min",keras.backend.min(y_pred))
-    log_y_true = keras.backend.log(y_true+keras.backend.epsilon())
-    log_y_pred = keras.backend.log(y_pred+keras.backend.epsilon())
-    diff = log_y_true - log_y_pred
+    #log_y_true = keras.backend.log(y_true+keras.backend.epsilon())
+    #log_y_pred = keras.backend.log(y_pred+keras.backend.epsilon())
+    diff = y_true - y_pred
     #tf.print("diff_max",keras.backend.max(diff))
     #tf.print("diff_min",keras.backend.min(diff))
     n = y_true.shape[1] * y_true.shape[2]
@@ -183,7 +181,6 @@ def main():
     data_depth,data_images = import_data()
     data_depth = data_depth[:cutoff]
     data_images = data_images[:cutoff]
-    #color_depth_overlay(data_images[0],data_depth[0])
     #coarse_output = coarse_nn(data_images,data_depth)
     coarse_model = load_coarse(data_images)
     fine_net(data_images,data_depth,coarse_model)
