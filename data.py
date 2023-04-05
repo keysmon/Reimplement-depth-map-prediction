@@ -69,12 +69,27 @@ def import_data():
     
     
     return data_depth,data_images
-    
+   
+def visualize_depth_map(samples):
+    print("visual")
+    image, target = samples
+    cmap = plt.cm.jet
+    cmap.set_bad(color="black")
+
+
+    fig, ax = plt.subplots(6, 2, figsize=(50, 50))
+    for i in range(6):
+        
+        ax[i, 0].imshow((image[i].squeeze()))
+        ax[i, 1].imshow((target[i].squeeze()), cmap=cmap)
+    plt.show()
+
+
 if __name__ == "__main__":
     data_depth,data_images, = import_data()
     #plt.imshow(data_images[0])
     #plt.show()
-    
+    visualize_depth_map((data_images,data_depth))
     print(type(data_depth))
     print(type(data_images))
     print(data_images.shape)
