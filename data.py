@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 # scenes – Cx1 cell array of the name of the scene from which each image was taken.
 
 def import_data():
-    if not os.path.exists('input_data.npy'):
+    if not os.path.exists('input_data.npz'):
         f = h5py.File('nyu_depth_data_labeled.mat', 'r')
         
         data_depth = f['depths']
@@ -59,11 +59,11 @@ def import_data():
         #print(updated_data_depth.shape)
             
         # save the data to a local file
-        with open('input_data.npy','wb') as f:
+        with open('input_data.npz','wb') as f:
             np.savez(f,x = updated_data_depth,y = updated_data_images)
         
     
-    npzfile = np.load('input_data.npy')
+    npzfile = np.load('input_data.npz')
     data_depth = npzfile['x']
     data_images = npzfile['y']
     
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     data_depth,data_images, = import_data()
     #plt.imshow(data_images[0])
     #plt.show()
-    visualize_depth_map((data_images,data_depth))
+    #visualize_depth_map((data_images,data_depth))
     print(type(data_depth))
     print(type(data_images))
     print(data_images.shape)
