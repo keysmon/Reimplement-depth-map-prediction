@@ -71,7 +71,6 @@ def import_data():
     return data_depth,data_images
    
 def visualize_depth_map(samples):
-    print("visual")
     image, target = samples
     cmap = plt.cm.jet
     cmap.set_bad(color="black")
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     data_depth,data_images, = import_data()
     #plt.imshow(data_images[0])
     #plt.show()
-    #visualize_depth_map((data_images,data_depth))
+    visualize_depth_map((data_images,data_depth))
     print(type(data_depth))
     print(type(data_images))
     print(data_images.shape)

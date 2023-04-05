@@ -9,13 +9,18 @@ import os
 from data import import_data
 import cv2
 import numpy as np
-
+coarse_lrate = 0.001
+fine_lrate = 0.001
+epoch = 10
 # (2284, 320, 240, 3)
 # (2284, 640, 480)
 # (2284, 640, 480)
 lambda_ = 0.5
 cutoff = 2284
-
+img_height = 240
+img_width = 320
+depth_height = 60
+depth_width = 80
 def coarse_nn(X,Y):
     print(X.shape)
     print(Y.shape)
@@ -23,7 +28,7 @@ def coarse_nn(X,Y):
     model = keras.models.Sequential() 
     
     # input was downsampled from the original by a factor of 2
-    model.add(keras.layers.InputLayer(input_shape=(320,240,3)))
+    model.add(keras.layers.InputLayer(input_shape=(img_height,img_width,3)))
     model.add(keras.layers.Conv2D(96,(11,11),strides = (4,4),activation= 'relu',input_shape =(320,240,1),padding='same'))
     model.add(keras.layers.MaxPooling2D(pool_size = (2,2)))
     model.add(keras.layers.Conv2D(256,(5,5),activation= 'relu',padding='same'))
@@ -35,10 +40,10 @@ def coarse_nn(X,Y):
     model.add(keras.layers.Dense(4096,activation='relu'))
     model.add(keras.layers.Dropout(0.5))
     model.add(keras.layers.Dense(4800,activation='relu')) # output at 1/4 resolution of input
-    model.add(keras.layers.Reshape((80,60)))
+    model.add(keras.layers.Reshape((depth_height,depth_width)))
     
-    model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate=0.0001,momentum = 0.9),loss = Scale_invariant_loss,metrics = ['accuracy'],run_eagerly = False)
-    model.fit(x = X,y = Y, epochs = 20,batch_size = 32, validation_split=0.2)
+    model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate=coarse_lrate),loss = Scale_invariant_loss,metrics = ['accuracy'],run_eagerly = False)
+    model.fit(x = X,y = Y, epochs = epoch,batch_size = 32, validation_split=0.2)
     #coarse_output = model.predict(X)
     model.save("my_coarse_model")
     
@@ -95,7 +100,7 @@ def fine_net(X,Y,coarse_model):
     layer_2_6 = keras.layers.Conv2D(1,(5,5),activation= 'linear',padding='same')(layer_2_5)
 
     model = keras.Model(inputs = [input_1],outputs = [layer_2_6])
-    model.compile(optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=0.0001,momentum = 0.9),loss = Scale_invariant_loss,metrics = ['accuracy'])
+    model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate = fine_lrate),loss = Scale_invariant_loss,metrics = ['accuracy'])
 
     #print(model.summary(show_trainable = True,expand_nested = True))
     #print(model.get_layer(index = 0))
@@ -118,7 +123,7 @@ def fine_net(X,Y,coarse_model):
     print(model.summary(show_trainable = True,expand_nested = True))
     #print(coarse_model.summary(show_trainable = True,expand_nested = True))
 
-    model.fit(x = X,y = Y, epochs = 20 ,batch_size = 32,validation_split=0.2)
+    model.fit(x = X,y = Y, epochs = epoch ,batch_size = 32,validation_split=0.2)
     model.save("my_fine_model")
     
     
@@ -130,10 +135,14 @@ def Scale_invariant_loss(y_true, y_pred):
     y_pred = tf.clip_by_value(y_pred,0,y_pred.dtype.max)
     #tf.print("y_pred_max",keras.backend.max(y_pred))
     #tf.print("y_pred_min",keras.backend.min(y_pred))
-    log_y_true = keras.backend.log(y_true+keras.backend.epsilon())
+    
+    #log_y_true = keras.backend.log(y_true+keras.backend.epsilon())
     log_y_pred = keras.backend.log(y_pred+keras.backend.epsilon())
-   
-    diff = log_y_pred - log_y_true  
+    #tf.print("log_y_pred_max",keras.backend.max(log_y_pred))
+    #tf.print("log_y_pred_min",keras.backend.min(log_y_pred))
+    #tf.print("log_y_true_max",keras.backend.max(log_y_true))
+    #tf.print("log_y_true_min",keras.backend.min(log_y_true))
+    diff = log_y_pred - y_true  
     #tf.print("diff_max",keras.backend.max(diff))
     #tf.print("diff_min",keras.backend.min(diff))
     n = y_true.shape[1] * y_true.shape[2]
@@ -153,7 +162,7 @@ def Scale_invariant_loss(y_true, y_pred):
     loss_term2 = keras.backend.square(loss_term2)
     #tf.print("Reduced_sum_squared",loss_term2)
 
-    loss_term2 = 0.5*loss_term2/(n**2)
+    loss_term2 = lambda_*loss_term2/(n**2)
     #tf.print("loss_term2",loss_term2.shape)
     #tf.print("loss_term2_max",keras.backend.max(loss_term2))
     #tf.print("loss_term2_min",keras.backend.min(loss_term2))
@@ -174,11 +183,14 @@ def load_coarse(input):
 
 def main():
     data_depth,data_images = import_data()
+    data_images = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_images])
+    data_depth = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_depth])
+    data_depth = np.log(data_depth)
     #data_depth = data_depth[:cutoff]
     #data_images = data_images[:cutoff]
     coarse_output = coarse_nn(data_images,data_depth)
-    coarse_model = load_coarse(data_images)
-    fine_net(data_images,data_depth,coarse_model)
+    #coarse_model = load_coarse(data_images)
+    #fine_net(data_images,data_depth,coarse_model)
     
     return
  
