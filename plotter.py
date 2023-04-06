@@ -1,6 +1,6 @@
 from data import visualize_depth_map
-#import tensorflow.keras as keras
-#import tensorflow as tf
+import tensorflow.keras as keras
+import tensorflow as tf
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,17 +26,19 @@ def model_predict(model,X):
 
 def plot_coarse():
     data_images,data_depth = load_input()
+    data_images = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_images])
+    data_depth = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_depth])
     coarse_model = load_coarse_models()
     coarse_prediction = model_predict(coarse_model,data_images)
     visualize_depth_map((data_images,coarse_prediction))
-    #print(data_depth[0])
-    #print(coarse_prediction[0])
+    print(data_depth[0])
+    print(coarse_prediction[0])
     return
+
 
 def plot_fine():
     data_images,data_depth = load_input()
-    data_images = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_images])
-    data_depth = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_depth])
+    
     #fine_model = load_fine_models()
     #fine_prediction = model_predict(fine_model,data_images)
     visualize_depth_map((data_images,data_depth))
@@ -45,8 +47,8 @@ def plot_fine():
     return 
     
 def main():
-    #plot_coarse()
-    plot_fine()
+    plot_coarse()
+    
     return
     
     

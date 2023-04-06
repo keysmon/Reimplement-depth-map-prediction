@@ -1,7 +1,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-
+#import sklearn
 import tensorflow.keras as keras
 import tensorflow as tf
 tf.config.run_functions_eagerly(True)
@@ -21,6 +21,7 @@ img_height = 240
 img_width = 320
 depth_height = 60
 depth_width = 80
+
 def coarse_nn(X,Y):
     print(X.shape)
     print(Y.shape)
@@ -29,7 +30,7 @@ def coarse_nn(X,Y):
     
     # input was downsampled from the original by a factor of 2
     model.add(keras.layers.InputLayer(input_shape=(img_height,img_width,3)))
-    model.add(keras.layers.Conv2D(96,(11,11),strides = (4,4),activation= 'relu',input_shape =(320,240,1),padding='same'))
+    model.add(keras.layers.Conv2D(96,(11,11),strides = (4,4),activation= 'relu',input_shape =(img_height,img_width,1),padding='same'))
     model.add(keras.layers.MaxPooling2D(pool_size = (2,2)))
     model.add(keras.layers.Conv2D(256,(5,5),activation= 'relu',padding='same'))
     model.add(keras.layers.MaxPooling2D(pool_size = (2,2)))
@@ -43,8 +44,9 @@ def coarse_nn(X,Y):
     model.add(keras.layers.Reshape((depth_height,depth_width)))
     
     model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate=coarse_lrate),loss = Scale_invariant_loss,metrics = ['accuracy'],run_eagerly = False)
+    #model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate=coarse_lrate),loss = SSIMLoss,metrics = ['accuracy'],run_eagerly = False)
+
     model.fit(x = X,y = Y, epochs = epoch,batch_size = 32, validation_split=0.2)
-    #coarse_output = model.predict(X)
     model.save("my_coarse_model")
     
     return model
@@ -54,95 +56,69 @@ def coarse_nn(X,Y):
 def fine_net(X,Y,coarse_model):
     input_1 = keras.layers.Input(shape=(320,240,3))
     layer_1_1 = keras.layers.Conv2D(96,(11,11),strides = (4,4),activation= 'relu',input_shape =(320,240,1),padding='same')(input_1)
-    #layer_1_1.trainable = False
-    #layer_1_1.set_weights(coarse_model[0].get_weights())
-     
-     
     layer_1_2 = keras.layers.MaxPooling2D(pool_size = (2,2))(layer_1_1)
-    
     layer_1_3 = keras.layers.Conv2D(256,(5,5),activation= 'relu',padding='same')(layer_1_2)
-    #layer_1_3.trainable = False
-    #layer_1_3.set_weights(coarse_model[2].get_weights())
-    
     layer_1_4 = keras.layers.MaxPooling2D(pool_size = (2,2))(layer_1_3)
-    
-    layer_1_5 = keras.layers.Conv2D(384,(3,3),activation= 'relu',padding='same')(layer_1_4)
-    #layer_1_5.trainable = False
-    #layer_1_5.set_weights(coarse_model[4].get_weights())
-    
+    layer_1_5 = keras.layers.Conv2D(384,(3,3),activation= 'relu',padding='same')(layer_1_4) 
     layer_1_6 = keras.layers.Conv2D(384,(3,3),activation= 'relu',padding='same')(layer_1_5)
-    #layer_1_6.trainable = False
-    #layer_1_6.set_weights(coarse_model[5].get_weights())
-    
     layer_1_7 = keras.layers.Conv2D(384,(3,3),activation= 'relu',padding='same')(layer_1_6)
-    #layer_1_7.trainable = False
-    #layer_1_7.set_weights(coarse_model[6].get_weights())
-    
-    layer_1_8 = keras.layers.Flatten()(layer_1_7)
-    
+    layer_1_8 = keras.layers.Flatten()(layer_1_7)  
     layer_1_9 = keras.layers.Dense(4096,activation='relu')(layer_1_8)
-    #layer_1_9.trainable = False
-    #layer_1_9.set_weights(coarse_model[8].get_weights())
-    
     layer_1_10 = keras.layers.Dropout(0.5)(layer_1_9)
     layer_1_11 = keras.layers.Dense(4800,activation='relu')(layer_1_10)
-    #layer_1_11.trainable = False
-    #layer_1_11.set_weights(coarse_model[10].get_weights())
-    
     layer_1_12 = keras.layers.Reshape((80,60,1))(layer_1_11)
-    
     layer_2_1 = keras.layers.Conv2D(63,(9,9),activation= 'relu',input_shape =(320,240,1),padding='same')(input_1)
     layer_2_2 = keras.layers.MaxPooling2D(pool_size = (2,2),strides = 4)(layer_2_1)
     layer_2_3 = keras.layers.Concatenate()([layer_1_12,layer_2_2])
-    
     layer_2_4 = keras.layers.Conv2D(64,(5,5),activation= 'relu',padding='same')(layer_2_3)
     layer_2_5 = keras.layers.Conv2D(64,(5,5),activation= 'relu',padding='same')(layer_2_4)
-    layer_2_6 = keras.layers.Conv2D(1,(5,5),activation= 'linear',padding='same')(layer_2_5)
-
+    layer_2_6 = keras.layers.Conv2D(1,(5,5),activation= 'relu',padding='same')(layer_2_5)
     model = keras.Model(inputs = [input_1],outputs = [layer_2_6])
     model.compile(optimizer = tf.keras.optimizers.SGD(learning_rate = fine_lrate),loss = Scale_invariant_loss,metrics = ['accuracy'])
-
-    #print(model.summary(show_trainable = True,expand_nested = True))
-    #print(model.get_layer(index = 0))
     model.layers[1].trainable = False
     model.layers[3].trainable = False
     model.layers[5].trainable = False
     model.layers[6].trainable = False
     model.layers[7].trainable = False
     model.layers[9].trainable = False
+    
     model.layers[11].trainable = False
     model.layers[1].set_weights(coarse_model.layers[0].get_weights())
+    
     model.layers[3].set_weights(coarse_model.layers[2].get_weights())
     model.layers[5].set_weights(coarse_model.layers[4].get_weights())
     model.layers[6].set_weights(coarse_model.layers[5].get_weights())
     model.layers[7].set_weights(coarse_model.layers[6].get_weights())
     model.layers[9].set_weights(coarse_model.layers[8].get_weights())
     model.layers[11].set_weights(coarse_model.layers[10].get_weights())
-    
-    #model.layers[0].set_weights(coarse_model.layers[1].get_weights())
     print(model.summary(show_trainable = True,expand_nested = True))
-    #print(coarse_model.summary(show_trainable = True,expand_nested = True))
 
     model.fit(x = X,y = Y, epochs = epoch ,batch_size = 32,validation_split=0.2)
     model.save("my_fine_model")
-    
-    
+
     return
+    
 def Scale_invariant_loss(y_true, y_pred):
     #tf.print("\ny_true",y_true.shape)
     #tf.print("y_pred",y_pred.shape)
     
-    y_pred = tf.clip_by_value(y_pred,0,y_pred.dtype.max)
-    #tf.print("y_pred_max",keras.backend.max(y_pred))
-    #tf.print("y_pred_min",keras.backend.min(y_pred))
+    #y_pred = tf.clip_by_value(y_pred,0,y_pred.dtype.max)
     
-    #log_y_true = keras.backend.log(y_true+keras.backend.epsilon())
+    #tf.print("\ny_pred_max",keras.backend.max(y_pred))
+    #tf.print("y_pred_min",keras.backend.min(y_pred))
+    #tf.print("y_true_max",keras.backend.max(y_true))
+    #tf.print("y_true_min",keras.backend.min(y_true))
+    
+    log_y_true = keras.backend.log(y_true+keras.backend.epsilon())
     log_y_pred = keras.backend.log(y_pred+keras.backend.epsilon())
+    #log_y_pred = tf.clip_by_value(y_pred,-1,y_pred.dtype.max)
+    
     #tf.print("log_y_pred_max",keras.backend.max(log_y_pred))
     #tf.print("log_y_pred_min",keras.backend.min(log_y_pred))
     #tf.print("log_y_true_max",keras.backend.max(log_y_true))
     #tf.print("log_y_true_min",keras.backend.min(log_y_true))
-    diff = log_y_pred - y_true  
+    
+    diff = log_y_pred - log_y_true  
     #tf.print("diff_max",keras.backend.max(diff))
     #tf.print("diff_min",keras.backend.min(diff))
     n = y_true.shape[1] * y_true.shape[2]
@@ -180,12 +156,15 @@ def load_coarse(input):
     model = keras.models.load_model("my_coarse_model", compile = False)
     return model
 
-
+    
 def main():
     data_depth,data_images = import_data()
+    data_images = np.divide(data_images, 255)
+    
+    
     data_images = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_images])
     data_depth = np.array([cv2.rotate(i,cv2.ROTATE_90_CLOCKWISE) for i in data_depth])
-    data_depth = np.log(data_depth)
+    
     #data_depth = data_depth[:cutoff]
     #data_images = data_images[:cutoff]
     coarse_output = coarse_nn(data_images,data_depth)
