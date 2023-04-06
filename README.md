@@ -1,5 +1,12 @@
 # Reimplement-depth-map-prediction
 
-Stereo vision-based depth estimation is a common method used for robots and self-driving cars to navigate, grasp surrounding objects and avoid collisions. They require a system of two cameras separated from each other. On the other hand, monocular images (single-eyed) images are more often used in practice: social media posts, real estate listing, and online marketplaces. Monocular depth estimation provides better understanding of those images and their geometric relations with the environment. While local appearance information is sufficient in estimating the depth map for a stereo image, finding its depth using only a single image is more complicated. It requires both global information and local disparity from various cues. Depth cues for single images can include line angles, perspective, object sizes, image position, and atmosphere effects [1]. For this project, our goal is to build neural networks to capture the global structure of a scene and relate these depth clues effectively. We will attempt to accurately predict depth maps and reduce the error comparing the group truth depth map.
+Implementation of Depth Map Prediction from a Single Image using a Multi-Scale Deep Network.
 
 
+If running locally install requirements with `pip install -r requirements.txt`
+
+Run the neural network with `python neural_networks.py`
+
+Optionally, run the Python Notebook in Google Colab. If using Google Colab, GPU hardware acceleration is recommmended. 
+
+Running the neural network requires the NYU Depth V1 dataset (`nyu_depth_data_labeled.mat`) which can be downloaded from: https://cs.nyu.edu/~silberman/datasets/nyu_depth_v1.html
